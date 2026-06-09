@@ -127,9 +127,9 @@ export function GaebViewer() {
           <section className="grid gap-6 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
             <section
               aria-label="GAEB Baumstruktur"
-              className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+              className="pane-scrollbar max-h-[calc(100vh-14rem)] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
             >
-              <div className="mb-5 border-b border-slate-800 pb-4">
+              <div className="sticky top-0 z-10 -mx-2 mb-5 border-b border-slate-800 bg-slate-900/95 px-2 pb-4 backdrop-blur-sm">
                 <h2 className="text-xl font-semibold">Baumstruktur</h2>
                 <p className="mt-2 text-sm text-slate-400">
                   {gaebDocument.projectName || 'Projekt ohne Namen'} · LV {gaebDocument.boqName || '—'} · DP{' '}
@@ -250,9 +250,9 @@ function DetailPanel({ document, node }: { document: GaebDocument; node: GaebNod
   return (
     <section
       aria-label="Details zum ausgewählten Baumelement"
-      className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+      className="pane-scrollbar max-h-[calc(100vh-14rem)] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
     >
-      <div className="border-b border-slate-800 pb-4">
+      <div className="sticky top-0 z-10 -mx-2 border-b border-slate-800 bg-slate-900/95 px-2 pb-4 backdrop-blur-sm">
         <h2 className="text-xl font-semibold">Inhalte</h2>
         <p className="mt-2 text-sm text-slate-400">
           {document.projectName || 'Projekt ohne Namen'} · {document.boqName || 'Leistungsverzeichnis'}
