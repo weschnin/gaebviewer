@@ -6,12 +6,16 @@ import { GaebViewer } from '@/components/gaeb-viewer';
 import { sampleGaebXml } from '@/test/fixtures/sample-gaeb';
 
 describe('GaebViewer', () => {
-  it('zeigt eine Drag-and-Drop-Zone für GAEB-Dateien an', () => {
+  it('zeigt eine kompaktere Drag-and-Drop-Zone für GAEB-Dateien an', () => {
     render(<GaebViewer />);
 
     expect(screen.getByRole('heading', { name: /gaeb viewer/i })).toBeInTheDocument();
     expect(screen.getByText(/gaeb-datei hier ablegen/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/gaeb-datei auswählen/i)).toBeInTheDocument();
+
+    const uploadZone = screen.getByText(/gaeb-datei hier ablegen/i).closest('section');
+    expect(uploadZone?.className).toContain('max-w-3xl');
+    expect(uploadZone?.className).toContain('p-5');
   });
 
   it('zeigt nach dem Upload genau zwei Arbeitsbereiche: Baum links und Details rechts', async () => {
@@ -31,7 +35,20 @@ describe('GaebViewer', () => {
     expect(screen.queryByRole('heading', { name: /metadaten/i })).not.toBeInTheDocument();
   });
 
-  it('begrenzt linkes und rechtes Panel auf die Browserhöhe, macht beide vertikal scrollbar und hält die Header sticky', async () => {
+  it('zeigt die Projektbezeichnung zwischen Uploadbereich und Arbeitsbereichen an', async () => {
+    const user = userEvent.setup();
+    render(<GaebViewer />);
+
+    await user.upload(
+      screen.getByLabelText(/gaeb-datei auswählen/i),
+      new File([sampleGaebXml], 'Zaunbau.x82', { type: 'text/xml' }),
+    );
+
+    const projectHeading = await screen.findByRole('heading', { name: '096-56 Südallee Sanierung' });
+    expect(projectHeading).toBeInTheDocument();
+  });
+
+  it('begrenzt linkes und rechtes Panel auf die Browserhöhe, macht beide vertikal scrollbar und hält die Werkzeugleiste sticky', async () => {
     const user = userEvent.setup();
     render(<GaebViewer />);
 
@@ -42,8 +59,7 @@ describe('GaebViewer', () => {
 
     const treePanel = await screen.findByRole('region', { name: /gaeb baumstruktur/i });
     const detailPanel = screen.getByRole('region', { name: /details zum ausgewählten baumelement/i });
-    const treeHeader = within(treePanel).getByRole('heading', { name: /baumstruktur/i }).closest('div');
-    const detailHeader = within(detailPanel).getByRole('heading', { name: /inhalte/i }).closest('div');
+    const treeToolbar = within(treePanel).getByRole('button', { name: /alle elemente öffnen/i }).closest('div');
 
     expect(treePanel.className).toContain('max-h-[');
     expect(treePanel.className).toContain('overflow-y-auto');
@@ -51,13 +67,24 @@ describe('GaebViewer', () => {
     expect(detailPanel.className).toContain('max-h-[');
     expect(detailPanel.className).toContain('overflow-y-auto');
     expect(detailPanel.className).toContain('pane-scrollbar');
-    expect(treeHeader?.className).toContain('sticky');
-    expect(treeHeader?.className).toContain('top-0');
-    expect(detailHeader?.className).toContain('sticky');
-    expect(detailHeader?.className).toContain('top-0');
+    expect(treeToolbar?.className).toContain('sticky');
+    expect(treeToolbar?.className).toContain('top-0');
   });
 
-  it('stellt links eine explorer-ähnliche Baumstruktur mit Gruppen-/Positionsicons und OZ-Nummern dar', async () => {
+  it('entfernt die statischen Überschriften Baumstruktur und Inhalte aus den Panels', async () => {
+    const user = userEvent.setup();
+    render(<GaebViewer />);
+
+    await user.upload(
+      screen.getByLabelText(/gaeb-datei auswählen/i),
+      new File([sampleGaebXml], 'Zaunbau.x82', { type: 'text/xml' }),
+    );
+
+    expect(screen.queryByRole('heading', { name: /^baumstruktur$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^inhalte$/i })).not.toBeInTheDocument();
+  });
+
+  it('stellt links eine explorer-ähnliche Baumstruktur mit Gruppen-/Positionsicons und OZ-Nummern sowie globalen Öffnen/Schließen-Buttons dar', async () => {
     const user = userEvent.setup();
     render(<GaebViewer />);
 
@@ -68,12 +95,34 @@ describe('GaebViewer', () => {
 
     const treePanel = await screen.findByRole('region', { name: /gaeb baumstruktur/i });
 
+    expect(within(treePanel).getByRole('button', { name: /alle elemente öffnen/i })).toBeInTheDocument();
+    expect(within(treePanel).getByRole('button', { name: /alle elemente schließen/i })).toBeInTheDocument();
     expect(within(treePanel).getAllByText('📁').length).toBeGreaterThan(0);
     expect(within(treePanel).getAllByText('📄').length).toBeGreaterThan(0);
     expect(within(treePanel).getByText('31')).toBeInTheDocument();
     expect(within(treePanel).getByText('31.22')).toBeInTheDocument();
     expect(within(treePanel).getByText('31.22.0100')).toBeInTheDocument();
     expect(within(treePanel).getByRole('button', { name: /knoten metallbauarbeiten zuklappen/i })).toBeInTheDocument();
+  });
+
+  it('schließt und öffnet mit den globalen Buttons die komplette Baumstruktur', async () => {
+    const user = userEvent.setup();
+    render(<GaebViewer />);
+
+    await user.upload(
+      screen.getByLabelText(/gaeb-datei auswählen/i),
+      new File([sampleGaebXml], 'Zaunbau.x82', { type: 'text/xml' }),
+    );
+
+    const closeAllButton = await screen.findByRole('button', { name: /alle elemente schließen/i });
+    await user.click(closeAllButton);
+
+    expect(screen.queryByText('Zäune / Türen / Tore / Fensterelemente')).not.toBeInTheDocument();
+
+    const openAllButton = screen.getByRole('button', { name: /alle elemente öffnen/i });
+    await user.click(openAllButton);
+
+    expect(screen.getByText('Zäune / Türen / Tore / Fensterelemente')).toBeInTheDocument();
   });
 
   it('bricht lange Titel im linken Baum sauber um, statt OZ und Kurztext zu überlagern', async () => {

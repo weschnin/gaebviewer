@@ -71,9 +71,21 @@ export function GaebViewer() {
     );
   }
 
+  function collapseAllNodes() {
+    if (!gaebDocument) {
+      return;
+    }
+
+    setCollapsedNodeIds(collectExpandableNodeIds(gaebDocument.nodes));
+  }
+
+  function expandAllNodes() {
+    setCollapsedNodeIds([]);
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10 lg:px-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 lg:px-10">
         <header className="space-y-3">
           <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">Projektstart</p>
           <h1 className="text-4xl font-semibold tracking-tight">GAEB Viewer</h1>
@@ -85,7 +97,7 @@ export function GaebViewer() {
 
         <section
           className={[
-            'rounded-3xl border border-dashed p-8 transition',
+            'max-w-3xl rounded-2xl border border-dashed p-5 transition',
             isDragging
               ? 'border-cyan-300 bg-cyan-400/10'
               : 'border-slate-700 bg-slate-900/70 hover:border-slate-500',
@@ -95,10 +107,10 @@ export function GaebViewer() {
           onDragOver={(event) => event.preventDefault()}
           onDrop={onDrop}
         >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">GAEB-Datei hier ablegen</h2>
-              <p className="text-slate-300">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">GAEB-Datei hier ablegen</h2>
+              <p className="text-sm text-slate-300">
                 Unterstützt werden XML-basierte GAEB-Dateien wie <code>.x82</code>.
               </p>
             </div>
@@ -106,7 +118,7 @@ export function GaebViewer() {
             <div>
               <label
                 htmlFor="gaeb-file-input"
-                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300"
+                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
               >
                 GAEB-Datei auswählen
               </label>
@@ -124,37 +136,60 @@ export function GaebViewer() {
         </section>
 
         {gaebDocument ? (
-          <section className="grid gap-6 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
-            <section
-              aria-label="GAEB Baumstruktur"
-              className="pane-scrollbar max-h-[calc(100vh-14rem)] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
-            >
-              <div className="sticky top-0 z-10 -mx-2 mb-5 border-b border-slate-800 bg-slate-900/95 px-2 pb-4 backdrop-blur-sm">
-                <h2 className="text-xl font-semibold">Baumstruktur</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  {gaebDocument.projectName || 'Projekt ohne Namen'} · LV {gaebDocument.boqName || '—'} · DP{' '}
-                  {gaebDocument.dp || '—'}
-                </p>
-              </div>
-
-              <ul className="space-y-1.5">
-                {gaebDocument.nodes.map((node) => (
-                  <TreeNode
-                    key={node.id}
-                    node={node}
-                    depth={0}
-                    selectedNodeId={selectedNodeId}
-                    collapsedNodeIds={collapsedNodeIds}
-                    onSelect={setSelectedNodeId}
-                    onToggle={toggleNode}
-                    ozPath={[]}
-                  />
-                ))}
-              </ul>
+          <>
+            <section className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Baumaßnahme</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-slate-50">
+                {gaebDocument.projectName || 'Projekt ohne Namen'}
+              </h2>
             </section>
 
-            <DetailPanel document={gaebDocument} node={selectedNode} />
-          </section>
+            <section className="grid gap-6 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)]">
+              <section
+                aria-label="GAEB Baumstruktur"
+                className="pane-scrollbar max-h-[calc(100vh-14rem)] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+              >
+                <div className="sticky top-0 z-10 -mx-2 mb-5 flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-2 pb-4 backdrop-blur-sm">
+                  <p className="text-sm text-slate-400">
+                    LV {gaebDocument.boqName || '—'} · DP {gaebDocument.dp || '—'}
+                  </p>
+                  <div className="sticky top-0 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-200 transition hover:border-cyan-400 hover:text-cyan-200"
+                      onClick={expandAllNodes}
+                    >
+                      Alle Elemente öffnen
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-slate-700 px-3 py-1.5 text-sm text-slate-200 transition hover:border-cyan-400 hover:text-cyan-200"
+                      onClick={collapseAllNodes}
+                    >
+                      Alle Elemente schließen
+                    </button>
+                  </div>
+                </div>
+
+                <ul className="space-y-1.5">
+                  {gaebDocument.nodes.map((node) => (
+                    <TreeNode
+                      key={node.id}
+                      node={node}
+                      depth={0}
+                      selectedNodeId={selectedNodeId}
+                      collapsedNodeIds={collapsedNodeIds}
+                      onSelect={setSelectedNodeId}
+                      onToggle={toggleNode}
+                      ozPath={[]}
+                    />
+                  ))}
+                </ul>
+              </section>
+
+              <DetailPanel document={gaebDocument} node={selectedNode} />
+            </section>
+          </>
         ) : null}
       </div>
     </main>
@@ -253,8 +288,7 @@ function DetailPanel({ document, node }: { document: GaebDocument; node: GaebNod
       className="pane-scrollbar max-h-[calc(100vh-14rem)] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
     >
       <div className="sticky top-0 z-10 -mx-2 border-b border-slate-800 bg-slate-900/95 px-2 pb-4 backdrop-blur-sm">
-        <h2 className="text-xl font-semibold">Inhalte</h2>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="text-sm text-slate-400">
           {document.projectName || 'Projekt ohne Namen'} · {document.boqName || 'Leistungsverzeichnis'}
         </p>
       </div>
@@ -305,6 +339,10 @@ function TextBlock({ label, value }: { label: string; value: string }) {
 
 function flattenNodes(nodes: GaebNode[]): GaebNode[] {
   return nodes.flatMap((node) => [node, ...flattenNodes(node.children)]);
+}
+
+function collectExpandableNodeIds(nodes: GaebNode[]): string[] {
+  return nodes.flatMap((node) => [node.id, ...collectExpandableNodeIds(node.children)]).filter((nodeId, index, all) => all.indexOf(nodeId) === index);
 }
 
 function findNodeById(nodes: GaebNode[], nodeId: string): GaebNode | null {
